@@ -1156,6 +1156,7 @@ body {
         html += '<input class="sprint-input" placeholder="默念后点击「已掌握」" id="sprint-input-' + item.id + '">';
         html += '<button class="btn btn-primary btn-sm" onclick="markSprintMastered(\'' + item.id + '\')">已掌握</button>';
         html += '<button class="btn btn-sm" onclick="peekSprint(\'' + item.id + '\')">提示</button>';
+        html += '</div>';
       } else {
         html += '<div class="sprint-actions">';
         html += '<button class="btn btn-sm" onclick="unmarkSprintMastered(\'' + item.id + '\')">重新练习</button>';
@@ -1216,23 +1217,20 @@ body {
   };
 
   function highlightKeywords(text) {
-    // Highlight key anatomical terms - escape HTML first, then mark keywords
+    // Highlight key anatomical terms - escape HTML first, then mark all keywords in ONE pass
     var html = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
     var keywords = ['动脉','静脉','神经','肌肉','骨','关节','韧带','腱','膜','核','束','窦','管','孔','裂','角','弓','窝','沟','隆凸','三角','峡','盘','瓣','囊','室','房','网','丛','缘','面','头','颈','体','底','尖','门','蒂','裂孔','隐窝','交叉','乳头','切迹','隆起','膨大','凹陷','狭窄','膨隆','扁桃体','圆锥','动脉环','传导束','纤维束','神经核','神经节','感受器','中枢'];
-    // Sort by length (longest first) to avoid partial highlights
+    // Sort by length (longest first) for regex alternation priority
     keywords.sort(function(a, b) { return b.length - a.length; });
-    keywords.forEach(function(kw) {
-      var regex = new RegExp('(' + kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'g');
-      html = html.replace(regex, '<mark class="hl">$1</mark>');
+    // Build a single combined regex to replace ALL keywords in ONE pass, preventing nested marks
+    var escaped = keywords.map(function(kw) {
+      return kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     });
-    // Clean up nested marks (e.g. <mark class="hl">大脑<mark class="hl">动脉</mark>环</mark> -> just show the outer)
-    while (html.indexOf('<mark class="hl"><mark class="hl">') >= 0) {
-      html = html.replace(/<mark class="hl"><mark class="hl">/g, '<mark class="hl">');
-      html = html.replace(/<\/mark><\/mark>/g, '</mark>');
-    }
+    var combined = new RegExp('(' + escaped.join('|') + ')', 'g');
+    html = html.replace(combined, '<mark class="hl">$1</mark>');
     return html;
   }
 
