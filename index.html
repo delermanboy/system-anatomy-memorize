@@ -1289,6 +1289,33 @@ body {
   </div>
 </div>
 
+<!-- Fill Random Modal -->
+<div class="sprint-modal-overlay" id="fillModal">
+  <div class="sprint-modal-box" style="max-width:560px">
+    <button class="sprint-modal-close" id="fillModalClose">✕</button>
+    <div class="sprint-modal-meta" id="fillModalMeta"></div>
+    <div class="sprint-modal-point" id="fillModalText" style="font-size:0.95rem;line-height:2"></div>
+    <div class="sprint-modal-actions" style="margin-top:1rem">
+      <button class="btn btn-primary" id="fillModalRevealAll">揭示全部</button>
+      <button class="btn sprint-modal-again" id="fillModalAgain">换一题</button>
+    </div>
+  </div>
+</div>
+
+<!-- Essay Random Modal -->
+<div class="sprint-modal-overlay" id="essayModal">
+  <div class="sprint-modal-box" style="max-width:600px">
+    <button class="sprint-modal-close" id="essayModalClose">✕</button>
+    <div class="sprint-modal-meta" id="essayModalMeta"></div>
+    <div class="sprint-modal-point" id="essayModalQuestion" style="font-size:0.95rem;line-height:1.8;margin-bottom:0.5rem"></div>
+    <div id="essayModalAnswer" style="display:none;font-size:0.9rem;line-height:1.8;color:var(--muted);border-top:1px solid var(--rule);padding-top:0.75rem;margin-top:0.5rem"></div>
+    <div class="sprint-modal-actions" style="margin-top:1rem">
+      <button class="btn btn-primary" id="essayModalToggle">显示答案</button>
+      <button class="btn sprint-modal-again" id="essayModalAgain">换一题</button>
+    </div>
+  </div>
+</div>
+
 <!-- Scroll to top -->
 <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
@@ -1472,6 +1499,43 @@ body {
         if (e.target === modalOverlay) closeSprintModal();
       });
     }
+
+    // Fill modal events
+    var fillModalClose = document.getElementById('fillModalClose');
+    if (fillModalClose) fillModalClose.addEventListener('click', closeFillModal);
+    var fillModalReveal = document.getElementById('fillModalRevealAll');
+    if (fillModalReveal) fillModalReveal.addEventListener('click', fillModalRevealAll);
+    var fillModalAgain = document.getElementById('fillModalAgain');
+    if (fillModalAgain) fillModalAgain.addEventListener('click', randomFill);
+    var fillOverlay = document.getElementById('fillModal');
+    if (fillOverlay) {
+      fillOverlay.addEventListener('click', function(e) {
+        if (e.target === fillOverlay) closeFillModal();
+      });
+    }
+
+    // Essay modal events
+    var essayModalClose = document.getElementById('essayModalClose');
+    if (essayModalClose) essayModalClose.addEventListener('click', closeEssayModal);
+    var essayModalToggle = document.getElementById('essayModalToggle');
+    if (essayModalToggle) essayModalToggle.addEventListener('click', essayModalToggle);
+    var essayModalAgain = document.getElementById('essayModalAgain');
+    if (essayModalAgain) essayModalAgain.addEventListener('click', randomEssay);
+    var essayOverlay = document.getElementById('essayModal');
+    if (essayOverlay) {
+      essayOverlay.addEventListener('click', function(e) {
+        if (e.target === essayOverlay) closeEssayModal();
+      });
+    }
+
+    // Escape closes all modals
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeSprintModal();
+        closeFillModal();
+        closeEssayModal();
+      }
+    });
     window.addEventListener('scroll', function() {
       var btn = document.getElementById('scrollTopBtn');
       if (window.scrollY > 300) btn.classList.add('show');
@@ -1869,10 +1933,32 @@ body {
     });
     if (items.length === 0) return;
     var item = items[Math.floor(Math.random() * items.length)];
-    state.fillRevealed[item.id] = new Set();
-    renderFillList();
-    var el = document.getElementById('fill-' + item.id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showFillModal(item);
+  };
+
+  function showFillModal(item) {
+    var text = item.text || '';
+    var blanks = item.blanks || [];
+    // Build blanked text
+    var html = text;
+    blanks.forEach(function(b) {
+      html = html.replace(new RegExp('(' + b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'g'), '<span class="blank-slot" style="color:var(--accent);font-weight:bold;border-bottom:2px dashed var(--accent);cursor:pointer" onclick="this.style.color=\'var(--ink)\';this.style.borderBottomColor=\'var(--ink)\'">$1</span>');
+    });
+    document.getElementById('fillModalText').innerHTML = html;
+    document.getElementById('fillModalMeta').innerHTML = '<span>' + (item.category || '') + '</span>';
+    document.getElementById('fillModal').classList.add('show');
+  }
+
+  window.closeFillModal = function() {
+    document.getElementById('fillModal').classList.remove('show');
+  };
+
+  window.fillModalRevealAll = function() {
+    var slots = document.querySelectorAll('#fillModalText .blank-slot');
+    slots.forEach(function(s) {
+      s.style.color = 'var(--ink)';
+      s.style.borderBottomColor = 'var(--ink)';
+    });
   };
 
   function updateFillProgress() {
@@ -1961,10 +2047,32 @@ body {
     });
     if (items.length === 0) return;
     var item = items[Math.floor(Math.random() * items.length)];
-    state.essayRevealed[item.id] = false;
-    renderEssayList();
-    var el = document.getElementById('essay-' + item.id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showEssayModal(item);
+  };
+
+  function showEssayModal(item) {
+    document.getElementById('essayModalQuestion').innerHTML = '<strong>[' + (item.type || '简答题') + ']</strong> ' + (item.question || '');
+    document.getElementById('essayModalAnswer').innerHTML = formatAnswer(item.answer || '');
+    document.getElementById('essayModalAnswer').style.display = 'none';
+    document.getElementById('essayModalToggle').textContent = '显示答案';
+    document.getElementById('essayModalMeta').innerHTML = '<span>' + (item.category || '') + '</span>';
+    document.getElementById('essayModal').classList.add('show');
+  }
+
+  window.closeEssayModal = function() {
+    document.getElementById('essayModal').classList.remove('show');
+  };
+
+  window.essayModalToggle = function() {
+    var ans = document.getElementById('essayModalAnswer');
+    var btn = document.getElementById('essayModalToggle');
+    if (ans.style.display === 'none') {
+      ans.style.display = 'block';
+      btn.textContent = '隐藏答案';
+    } else {
+      ans.style.display = 'none';
+      btn.textContent = '显示答案';
+    }
   };
 
   function formatAnswer(answer) {
