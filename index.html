@@ -869,7 +869,7 @@ body {
       <button class="mode-btn active" onclick="setSprintMode('all')">全部</button>
       <button class="mode-btn" onclick="setSprintMode('unmastered')">未掌握</button>
       <button class="mode-btn" onclick="setSprintMode('important')">高频考点</button>
-      <button class="random-btn" onclick="randomSprint()">🎲 随机考点</button>
+      <button class="random-btn" id="randomSprintBtn">🎲 随机考点</button>
     </div>
     <div id="sprintList"></div>
   </div>
@@ -879,14 +879,14 @@ body {
 <!-- Sprint Random Modal -->
 <div class="sprint-modal-overlay" id="sprintModal">
   <div class="sprint-modal-box">
-    <button class="sprint-modal-close" onclick="closeSprintModal()">✕</button>
+    <button class="sprint-modal-close" id="sprintModalClose">✕</button>
     <div class="sprint-modal-meta" id="sprintModalMeta"></div>
     <div class="sprint-modal-point" id="sprintModalPoint"></div>
     <input class="sprint-modal-input" id="sprintModalInput" placeholder="默念后输入关键词...">
     <div class="sprint-modal-actions">
-      <button class="btn btn-primary" onclick="modalMarkMastered()">已掌握</button>
-      <button class="btn" onclick="modalPeek()">提示</button>
-      <button class="btn sprint-modal-again" onclick="randomSprint()">换一题</button>
+      <button class="btn btn-primary" id="sprintModalMastered">已掌握</button>
+      <button class="btn" id="sprintModalPeek">提示</button>
+      <button class="btn sprint-modal-again" id="sprintModalAgain">换一题</button>
     </div>
   </div>
 </div>
@@ -918,6 +918,24 @@ body {
     buildFilters();
     renderAll();
     updateStats();
+    // Bind sprint modal events via JS (more reliable than inline onclick)
+    var randomBtn = document.getElementById('randomSprintBtn');
+    if (randomBtn) randomBtn.addEventListener('click', randomSprint);
+    var modalClose = document.getElementById('sprintModalClose');
+    if (modalClose) modalClose.addEventListener('click', closeSprintModal);
+    var modalMastered = document.getElementById('sprintModalMastered');
+    if (modalMastered) modalMastered.addEventListener('click', modalMarkMastered);
+    var modalPeek = document.getElementById('sprintModalPeek');
+    if (modalPeek) modalPeek.addEventListener('click', modalPeek);
+    var modalAgain = document.getElementById('sprintModalAgain');
+    if (modalAgain) modalAgain.addEventListener('click', randomSprint);
+    // Close modal on overlay click
+    var modalOverlay = document.getElementById('sprintModal');
+    if (modalOverlay) {
+      modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) closeSprintModal();
+      });
+    }
     window.addEventListener('scroll', function() {
       var btn = document.getElementById('scrollTopBtn');
       if (window.scrollY > 300) btn.classList.add('show');
@@ -1373,12 +1391,6 @@ body {
     input.className = 'sprint-modal-input correct';
   };
 
-  // Close modal on overlay click
-  document.addEventListener('click', function(e) {
-    if (e.target.id === 'sprintModal') {
-      closeSprintModal();
-    }
-  });
   // Close modal on Escape
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeSprintModal();
