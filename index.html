@@ -451,7 +451,7 @@ body {
   line-height: 1.7;
   color: var(--ink);
 }
-.sprint-point .highlight {
+.sprint-point .hl {
   color: var(--accent);
   font-weight: bold;
 }
@@ -1112,22 +1112,27 @@ body {
   window.setSprintMode = function(mode) {
     state.sprintMode = mode;
     document.querySelectorAll('#panel-sprint .mode-btn').forEach(function(b) {
-      b.classList.toggle('active', b.textContent.indexOf(
-        mode === 'all' ? '全部' : (mode === 'unmastered' ? '未掌握' : '高频')
-      ) >= 0);
+      var txt = b.textContent;
+      var match = mode === 'all' ? txt.indexOf('全部') >= 0
+                : mode === 'unmastered' ? txt.indexOf('未掌握') >= 0
+                : mode === 'important' ? txt.indexOf('高频') >= 0
+                : false;
+      b.classList.toggle('active', match);
     });
     renderSprintList();
   };
 
-  function renderSprintList() {
+  function renderSprintList(skipShuffle) {
     var items = APP_DATA.keyPoints.filter(function(item) {
       var catMatch = state.sprintCategory === 'all' || item.category === state.sprintCategory;
       if (state.sprintMode === 'unmastered') return catMatch && !state.sprintMastered[item.id];
       if (state.sprintMode === 'important') return catMatch && item.importance >= 3;
       return catMatch;
     });
-    // Shuffle for variety
-    items = shuffleArray(items);
+    // Shuffle only on initial render, not when just marking mastered
+    if (!skipShuffle) {
+      items = shuffleArray(items);
+    }
     var container = document.getElementById('sprintList');
     if (items.length === 0) {
       container.innerHTML = '<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-text">全部掌握！太厉害了！</div></div>';
@@ -1163,17 +1168,21 @@ body {
   }
 
   window.markSprintMastered = function(id) {
+    if (state.sprintMastered[id]) return; // 防止重复计数
     state.sprintMastered[id] = true;
     state.sprintCorrect++;
     state.sprintTotal++;
     showToast('✅ 已标记为掌握！');
-    renderSprintList();
+    renderSprintList(true); // 不重新打乱
     updateStats();
   };
 
   window.unmarkSprintMastered = function(id) {
+    if (!state.sprintMastered[id]) return;
     delete state.sprintMastered[id];
-    renderSprintList();
+    state.sprintCorrect = Math.max(0, state.sprintCorrect - 1);
+    state.sprintTotal = Math.max(0, state.sprintTotal - 1);
+    renderSprintList(true);
     updateStats();
   };
 
@@ -1197,19 +1206,34 @@ body {
     if (items.length === 0) return;
     var item = items[Math.floor(Math.random() * items.length)];
     var el = document.getElementById('sprint-' + item.id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // 闪烁效果提示
+      el.style.transition = 'box-shadow 0.3s';
+      el.style.boxShadow = '0 0 20px rgba(0,212,170,0.3)';
+      setTimeout(function() { el.style.boxShadow = 'none'; }, 1500);
+    }
   };
 
   function highlightKeywords(text) {
-    // Highlight key anatomical terms
-    var keywords = ['动脉','静脉','神经','肌肉','骨','关节','韧带','腱','膜','核','束','窦','管','孔','裂','角','弓','窝','沟','隆凸','三角','峡','盘','瓣','囊','室','房','网','丛','弓','缘','面','头','颈','体','底','尖','门','蒂','裂孔','隐窝','交叉','乳头','切迹','隆起','膨大','凹陷','狭窄','膨隆','扁桃体','圆锥','动脉环','传导束','纤维束','神经核','神经节','感受器','中枢'];
-    var result = text;
+    // Highlight key anatomical terms - escape HTML first, then mark keywords
+    var html = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    var keywords = ['动脉','静脉','神经','肌肉','骨','关节','韧带','腱','膜','核','束','窦','管','孔','裂','角','弓','窝','沟','隆凸','三角','峡','盘','瓣','囊','室','房','网','丛','缘','面','头','颈','体','底','尖','门','蒂','裂孔','隐窝','交叉','乳头','切迹','隆起','膨大','凹陷','狭窄','膨隆','扁桃体','圆锥','动脉环','传导束','纤维束','神经核','神经节','感受器','中枢'];
+    // Sort by length (longest first) to avoid partial highlights
+    keywords.sort(function(a, b) { return b.length - a.length; });
     keywords.forEach(function(kw) {
-      // Only highlight if it's a standalone term (not part of a longer word)
-      var regex = new RegExp('(' + kw + ')', 'g');
-      result = result.replace(regex, '<span class="highlight">$1</span>');
+      var regex = new RegExp('(' + kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'g');
+      html = html.replace(regex, '<mark class="hl">$1</mark>');
     });
-    return result;
+    // Clean up nested marks (e.g. <mark class="hl">大脑<mark class="hl">动脉</mark>环</mark> -> just show the outer)
+    while (html.indexOf('<mark class="hl"><mark class="hl">') >= 0) {
+      html = html.replace(/<mark class="hl"><mark class="hl">/g, '<mark class="hl">');
+      html = html.replace(/<\/mark><\/mark>/g, '</mark>');
+    }
+    return html;
   }
 
   function updateSprintStats() {
