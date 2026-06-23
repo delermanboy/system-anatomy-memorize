@@ -621,6 +621,101 @@ body {
 .scroll-top:hover { transform: scale(1.1); }
 .scroll-top.show { display: flex; }
 
+/* ===== SPRINT MODAL ===== */
+.sprint-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.sprint-modal-overlay.show { display: flex; }
+.sprint-modal-box {
+  background: var(--bg2);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  max-width: 500px;
+  width: 90%;
+  padding: 1.5rem;
+  animation: popIn 0.25s ease;
+  position: relative;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+}
+.sprint-modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg3);
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.sprint-modal-close:hover {
+  background: var(--danger);
+  color: #fff;
+}
+.sprint-modal-point {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--ink);
+  margin: 0.5rem 0 1rem;
+  padding-right: 1.5rem;
+}
+.sprint-modal-point .hl {
+  color: var(--accent);
+  font-weight: bold;
+}
+.sprint-modal-meta {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.sprint-modal-input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'ArsenalSC', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.2s;
+}
+.sprint-modal-input:focus { border-color: var(--accent); }
+.sprint-modal-input.correct {
+  border-color: var(--success);
+  background: rgba(0,212,170,0.05);
+}
+.sprint-modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.sprint-modal-actions .btn {
+  flex: 1;
+  text-align: center;
+}
+.sprint-modal-again {
+  background: var(--bg3);
+  color: var(--muted);
+}
+
 /* ===== MOBILE ===== */
 @media (max-width: 640px) {
   .app-header { padding: 0.6rem 0.75rem; }
@@ -639,6 +734,10 @@ body {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.85) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 .card, .sprint-card {
   animation: fadeIn 0.3s ease;
@@ -776,6 +875,21 @@ body {
   </div>
 
 </main>
+
+<!-- Sprint Random Modal -->
+<div class="sprint-modal-overlay" id="sprintModal">
+  <div class="sprint-modal-box">
+    <button class="sprint-modal-close" onclick="closeSprintModal()">✕</button>
+    <div class="sprint-modal-meta" id="sprintModalMeta"></div>
+    <div class="sprint-modal-point" id="sprintModalPoint"></div>
+    <input class="sprint-modal-input" id="sprintModalInput" placeholder="默念后输入关键词...">
+    <div class="sprint-modal-actions">
+      <button class="btn btn-primary" onclick="modalMarkMastered()">已掌握</button>
+      <button class="btn" onclick="modalPeek()">提示</button>
+      <button class="btn sprint-modal-again" onclick="randomSprint()">换一题</button>
+    </div>
+  </div>
+</div>
 
 <!-- Scroll to top -->
 <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
@@ -1204,17 +1318,74 @@ body {
       if (state.sprintMode === 'important') return catMatch && item.importance >= 3;
       return catMatch;
     });
-    if (items.length === 0) return;
-    var item = items[Math.floor(Math.random() * items.length)];
-    var el = document.getElementById('sprint-' + item.id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // 闪烁效果提示
-      el.style.transition = 'box-shadow 0.3s';
-      el.style.boxShadow = '0 0 20px rgba(0,212,170,0.3)';
-      setTimeout(function() { el.style.boxShadow = 'none'; }, 1500);
+    if (items.length === 0) {
+      showToast('没有符合条件的考点');
+      return;
     }
+    state.modalItem = items[Math.floor(Math.random() * items.length)];
+    showSprintModal(state.modalItem);
   };
+
+  /* ---- Sprint Random Modal ---- */
+  function showSprintModal(item) {
+     var point = item.point || '';
+     var cat = item.category || '';
+     var starsHtml = '';
+     for (var si = 0; si < 3; si++) {
+       starsHtml += '<span class="star ' + (si < (item.importance || 1) ? '' : 'empty') + '">★</span>';
+     }
+     document.getElementById('sprintModalPoint').innerHTML = highlightKeywords(point);
+     document.getElementById('sprintModalMeta').innerHTML = starsHtml + '<span style="margin-left:6px">' + cat + '</span>';
+    var input = document.getElementById('sprintModalInput');
+    input.value = '';
+    input.className = 'sprint-modal-input';
+    input.disabled = false;
+    document.getElementById('sprintModal').classList.add('show');
+    state.modalMastered = false;
+    setTimeout(function() { input.focus(); }, 100);
+  }
+
+  window.closeSprintModal = function() {
+    document.getElementById('sprintModal').classList.remove('show');
+  };
+
+  window.modalMarkMastered = function() {
+    if (!state.modalItem) return;
+    var id = state.modalItem.id;
+    if (state.sprintMastered[id]) {
+      showToast('已标记为掌握');
+      return;
+    }
+    state.sprintMastered[id] = true;
+    state.sprintCorrect++;
+    state.sprintTotal++;
+    state.modalMastered = true;
+    document.getElementById('sprintModalInput').disabled = true;
+    showToast('✅ 已标记为掌握！');
+    renderSprintList(true);
+    updateStats();
+  };
+
+  window.modalPeek = function() {
+    if (!state.modalItem) return;
+    var input = document.getElementById('sprintModalInput');
+    input.value = state.modalItem.point || '';
+    input.className = 'sprint-modal-input correct';
+  };
+
+  // Close modal on overlay click
+  document.addEventListener('click', function(e) {
+    if (e.target.id === 'sprintModal') {
+      closeSprintModal();
+    }
+  });
+  // Close modal on Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeSprintModal();
+    if (e.key === 'Enter' && document.getElementById('sprintModal').classList.contains('show')) {
+      modalMarkMastered();
+    }
+  });
 
   function highlightKeywords(text) {
     // Highlight key anatomical terms - escape HTML first, then mark all keywords in ONE pass
