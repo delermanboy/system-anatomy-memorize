@@ -1368,6 +1368,7 @@ body {
     <div class="sprint-modal-actions">
       <button class="btn btn-primary" id="sprintModalMastered">已掌握</button>
       <button class="btn" id="sprintModalPeek">提示</button>
+      <button class="btn" id="sprintModalFav" title="收藏">★ 收藏</button>
       <button class="btn sprint-modal-again" id="sprintModalAgain">换一题</button>
     </div>
   </div>
@@ -1382,6 +1383,7 @@ body {
     <div class="sprint-modal-actions" style="margin-top:1rem">
       <button class="btn btn-primary" id="fillModalRevealAll">揭示全部</button>
       <button class="btn" id="fillModalReset">重新隐藏</button>
+      <button class="btn" id="fillModalFav" title="收藏">★ 收藏</button>
       <button class="btn sprint-modal-again" id="fillModalAgain">换一题</button>
     </div>
   </div>
@@ -1396,6 +1398,7 @@ body {
     <div id="essayModalAnswer" style="display:none;font-size:0.9rem;line-height:1.8;color:var(--muted);border-top:1px solid var(--rule);padding-top:0.75rem;margin-top:0.5rem"></div>
     <div class="sprint-modal-actions" style="margin-top:1rem">
       <button class="btn btn-primary" id="essayModalToggle">显示答案</button>
+      <button class="btn" id="essayModalFav" title="收藏">★ 收藏</button>
       <button class="btn sprint-modal-again" id="essayModalAgain">换一题</button>
     </div>
   </div>
@@ -1553,6 +1556,7 @@ body {
     soupIndex: 0,
     favorites: {}, // id -> true
     modalFillItem: null, // current fill modal item for blank reveal
+    modalEssayItem: null, // current essay modal item
     modalItem: null, // current sprint modal item
     modalMastered: false
   };
@@ -1607,6 +1611,11 @@ body {
     if (modalPeekEl) modalPeekEl.addEventListener('click', modalPeek);
     var modalAgain = document.getElementById('sprintModalAgain');
     if (modalAgain) modalAgain.addEventListener('click', randomSprint);
+    var modalFav = document.getElementById('sprintModalFav');
+    if (modalFav) modalFav.addEventListener('click', function() {
+      if (state.modalItem) toggleFavorite(state.modalItem.id);
+      updateModalFavBtn('sprintModalFav', state.modalItem ? state.modalItem.id : null);
+    });
     var modalOverlay = document.getElementById('sprintModal');
     if (modalOverlay) {
       modalOverlay.addEventListener('click', function(e) {
@@ -1623,6 +1632,11 @@ body {
     if (fillModalReset) fillModalReset.addEventListener('click', fillModalResetBlanks);
     var fillModalAgain = document.getElementById('fillModalAgain');
     if (fillModalAgain) fillModalAgain.addEventListener('click', randomFill);
+    var fillModalFav = document.getElementById('fillModalFav');
+    if (fillModalFav) fillModalFav.addEventListener('click', function() {
+      if (state.modalFillItem) toggleFavorite(state.modalFillItem.id);
+      updateModalFavBtn('fillModalFav', state.modalFillItem ? state.modalFillItem.id : null);
+    });
     var fillOverlay = document.getElementById('fillModal');
     if (fillOverlay) {
       fillOverlay.addEventListener('click', function(e) {
@@ -1637,6 +1651,11 @@ body {
     if (essayModalToggleEl) essayModalToggleEl.addEventListener('click', essayModalToggle);
     var essayModalAgain = document.getElementById('essayModalAgain');
     if (essayModalAgain) essayModalAgain.addEventListener('click', randomEssay);
+    var essayModalFav = document.getElementById('essayModalFav');
+    if (essayModalFav) essayModalFav.addEventListener('click', function() {
+      if (state.modalEssayItem) toggleFavorite(state.modalEssayItem.id);
+      updateModalFavBtn('essayModalFav', state.modalEssayItem ? state.modalEssayItem.id : null);
+    });
     var essayOverlay = document.getElementById('essayModal');
     if (essayOverlay) {
       essayOverlay.addEventListener('click', function(e) {
@@ -2086,6 +2105,7 @@ body {
     document.getElementById('fillModalText').innerHTML = html;
     document.getElementById('fillModalMeta').innerHTML = '<span>' + (item.category || '') + '</span>';
     document.getElementById('fillModal').classList.add('show');
+    updateModalFavBtn('fillModalFav', item.id);
   }
 
   window.revealSlotInModal = function(el) {
@@ -2218,12 +2238,14 @@ body {
   };
 
   function showEssayModal(item) {
+    state.modalEssayItem = item;
     document.getElementById('essayModalQuestion').innerHTML = '<strong>[' + (item.type || '简答题') + ']</strong> ' + (item.question || '');
     document.getElementById('essayModalAnswer').innerHTML = formatAnswer(item.answer || '');
     document.getElementById('essayModalAnswer').style.display = 'none';
     document.getElementById('essayModalToggle').textContent = '显示答案';
     document.getElementById('essayModalMeta').innerHTML = '<span>' + (item.category || '') + '</span>';
     document.getElementById('essayModal').classList.add('show');
+    updateModalFavBtn('essayModalFav', item.id);
   }
 
   window.closeEssayModal = function() {
@@ -2388,6 +2410,7 @@ body {
     input.disabled = false;
     document.getElementById('sprintModal').classList.add('show');
     state.modalMastered = false;
+    updateModalFavBtn('sprintModalFav', item.id);
     setTimeout(function() { input.focus(); }, 100);
   }
 
@@ -2511,6 +2534,17 @@ body {
   }
   function isFavFilter() {
     return state.fillCategory === '__fav__' || state.essayCategory === '__fav__' || state.sprintCategory === '__fav__';
+  }
+  function updateModalFavBtn(btnId, id) {
+    var btn = document.getElementById(btnId);
+    if (!btn || !id) return;
+    if (state.favorites[id]) {
+      btn.textContent = '★ 已收藏';
+      btn.style.color = 'var(--accent3)';
+    } else {
+      btn.textContent = '★ 收藏';
+      btn.style.color = '';
+    }
   }
 
   // ===== CORRECTIONS =====
