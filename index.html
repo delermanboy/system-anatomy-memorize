@@ -413,6 +413,31 @@ body {
   margin-left: 0.4rem;
 }
 
+/* ===== FAVORITES ===== */
+.fav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.2rem;
+  line-height: 1;
+  opacity: 0.4;
+  transition: all 0.2s;
+  margin-left: 0.3rem;
+}
+.fav-btn:hover { opacity: 0.7; transform: scale(1.2); }
+.fav-btn.active { opacity: 1; }
+.fav-btn.active .fav-icon { color: var(--accent3); }
+.filter-fav {
+  background: rgba(184,134,11,0.15);
+  color: var(--accent3);
+  border: 1px solid var(--accent3);
+}
+.filter-fav.active {
+  background: var(--accent3);
+  color: #fff;
+}
+
 /* ===== FILL BLANKS ===== */
 .blank-text {
   font-size: 0.95rem;
@@ -1441,11 +1466,13 @@ body {
     sprintMastered: {},
     sprintCorrect: 0,
     sprintTotal: 0,
-    soupIndex: 0
+    soupIndex: 0,
+    favorites: {} // id -> true
   };
 
   // ===== INIT =====
   function init() {
+    loadFavorites();
     buildFilters();
     renderAll();
     updateStats();
@@ -1781,6 +1808,7 @@ body {
     var el = document.getElementById(containerId);
     var html = '<span class="filter-label">章节：</span>';
     html += '<button class="filter-chip ' + (active === 'all' ? 'active' : '') + '" data-cat="all">全部</button>';
+    html += '<button class="filter-chip filter-fav ' + (active === '__fav__' ? 'active' : '') + '" data-cat="__fav__">★ 收藏</button>';
     categories.forEach(function(c) {
       html += '<button class="filter-chip ' + (active === c ? 'active' : '') + '" data-cat="' + c + '">' + c + '</button>';
     });
@@ -1805,6 +1833,7 @@ body {
 
   function renderFillList() {
     var items = APP_DATA.fillBlanks.filter(function(item) {
+      if (state.fillCategory === '__fav__') return state.favorites[item.id];
       return state.fillCategory === 'all' || item.category === state.fillCategory;
     });
     var container = document.getElementById('fillList');
@@ -1823,6 +1852,7 @@ body {
       html += '<div style="display:flex;align-items:center;gap:0.4rem">';
       html += '<span class="card-id">#' + item.id + '</span>';
       if (memCount > 0) html += '<span class="mem-badge">已背' + memCount + '次</span>';
+      html += favBtnHtml(item.id);
       html += '</div>';
       html += '</div>';
       html += '<div class="blank-text">';
@@ -1984,6 +2014,7 @@ body {
 
   function renderEssayList() {
     var items = APP_DATA.essayQuestions.filter(function(item) {
+      if (state.essayCategory === '__fav__') return state.favorites[item.id];
       var catMatch = state.essayCategory === 'all' || item.category === state.essayCategory;
       var typeMatch = state.essayType === 'all' || item.type === state.essayType;
       return catMatch && typeMatch;
@@ -2007,6 +2038,7 @@ body {
       html += '<div style="display:flex;align-items:center;gap:0.4rem">';
       html += '<span class="card-id">#' + item.id + '</span>';
       if (memCount > 0) html += '<span class="mem-badge">已背' + memCount + '次</span>';
+      html += favBtnHtml(item.id);
       html += '</div>';
       html += '</div>';
       html += '<div class="question-text">' + item.question + '</div>';
@@ -2107,6 +2139,7 @@ body {
 
   function renderSprintList(skipShuffle) {
     var items = APP_DATA.keyPoints.filter(function(item) {
+      if (state.sprintCategory === '__fav__') return state.favorites[item.id];
       var catMatch = state.sprintCategory === 'all' || item.category === state.sprintCategory;
       if (state.sprintMode === 'unmastered') return catMatch && !state.sprintMastered[item.id];
       if (state.sprintMode === 'important') return catMatch && item.importance >= 3;
@@ -2134,6 +2167,7 @@ body {
       html += '</span>';
       html += '<span class="sprint-category">' + item.category + '</span>';
       if (memCount > 0) html += '<span class="mem-badge">已背' + memCount + '次</span>';
+      html += favBtnHtml(item.id);
       html += '</div>';
       if (!mastered) {
         html += '<div class="sprint-actions">';
@@ -2305,6 +2339,40 @@ body {
     el.textContent = msg;
     el.classList.add('show');
     setTimeout(function() { el.classList.remove('show'); }, 2000);
+  }
+
+  // ===== FAVORITES =====
+  function loadFavorites() {
+    try {
+      var saved = localStorage.getItem('anatomy_favorites');
+      if (saved) state.favorites = JSON.parse(saved);
+    } catch(e) {}
+  }
+  function saveFavorites() {
+    try { localStorage.setItem('anatomy_favorites', JSON.stringify(state.favorites)); } catch(e) {}
+  }
+  window.toggleFavorite = function(id, event) {
+    if (event) event.stopPropagation();
+    if (state.favorites[id]) {
+      delete state.favorites[id];
+      showToast('已取消收藏');
+    } else {
+      state.favorites[id] = true;
+      showToast('已收藏 ★');
+    }
+    saveFavorites();
+    // Update all fav buttons with this id
+    document.querySelectorAll('.fav-btn[data-id="' + id + '"]').forEach(function(btn) {
+      if (state.favorites[id]) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+  };
+  function favBtnHtml(id) {
+    var active = state.favorites[id] ? ' active' : '';
+    return '<button class="fav-btn' + active + '" data-id="' + id + '" onclick="toggleFavorite(\'' + id + '\', event)" title="收藏"><span class="fav-icon">★</span></button>';
+  }
+  function isFavFilter() {
+    return state.fillCategory === '__fav__' || state.essayCategory === '__fav__' || state.sprintCategory === '__fav__';
   }
 
   function updateStats() {
