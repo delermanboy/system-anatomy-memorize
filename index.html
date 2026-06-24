@@ -1322,6 +1322,7 @@ body {
     <div class="sprint-modal-point" id="fillModalText" style="font-size:0.95rem;line-height:2"></div>
     <div class="sprint-modal-actions" style="margin-top:1rem">
       <button class="btn btn-primary" id="fillModalRevealAll">揭示全部</button>
+      <button class="btn" id="fillModalReset">重新隐藏</button>
       <button class="btn sprint-modal-again" id="fillModalAgain">换一题</button>
     </div>
   </div>
@@ -1467,7 +1468,10 @@ body {
     sprintCorrect: 0,
     sprintTotal: 0,
     soupIndex: 0,
-    favorites: {} // id -> true
+    favorites: {}, // id -> true
+    modalFillItem: null, // current fill modal item for blank reveal
+    modalItem: null, // current sprint modal item
+    modalMastered: false
   };
 
   // ===== INIT =====
@@ -1532,6 +1536,8 @@ body {
     if (fillModalClose) fillModalClose.addEventListener('click', closeFillModal);
     var fillModalReveal = document.getElementById('fillModalRevealAll');
     if (fillModalReveal) fillModalReveal.addEventListener('click', fillModalRevealAll);
+    var fillModalReset = document.getElementById('fillModalReset');
+    if (fillModalReset) fillModalReset.addEventListener('click', fillModalResetBlanks);
     var fillModalAgain = document.getElementById('fillModalAgain');
     if (fillModalAgain) fillModalAgain.addEventListener('click', randomFill);
     var fillOverlay = document.getElementById('fillModal');
@@ -1963,31 +1969,56 @@ body {
     });
     if (items.length === 0) return;
     var item = items[Math.floor(Math.random() * items.length)];
+    state.modalFillItem = item;
     showFillModal(item);
   };
 
   function showFillModal(item) {
     var text = item.text || '';
     var blanks = item.blanks || [];
-    // Build blanked text
+    // Build blanked text — blanks initially hidden as "______"
     var html = text;
-    blanks.forEach(function(b) {
-      html = html.replace(new RegExp('(' + b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'g'), '<span class="blank-slot" style="color:var(--accent);font-weight:bold;border-bottom:2px dashed var(--accent);cursor:pointer" onclick="this.style.color=\'var(--ink)\';this.style.borderBottomColor=\'var(--ink)\'">$1</span>');
+    blanks.forEach(function(blank, idx) {
+      var regex = new RegExp('(' + blank.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')');
+      html = html.replace(regex, '<span class="blank-slot" data-idx="' + idx + '" onclick="revealSlotInModal(this)" style="border-bottom:2px dashed var(--accent);cursor:pointer;font-weight:bold;color:transparent;background:transparent;padding:0 0.3rem">______</span>');
     });
     document.getElementById('fillModalText').innerHTML = html;
     document.getElementById('fillModalMeta').innerHTML = '<span>' + (item.category || '') + '</span>';
     document.getElementById('fillModal').classList.add('show');
   }
 
+  window.revealSlotInModal = function(el) {
+    var idx = parseInt(el.dataset.idx);
+    if (state.modalFillItem && state.modalFillItem.blanks && state.modalFillItem.blanks[idx]) {
+      el.textContent = state.modalFillItem.blanks[idx];
+      el.style.color = 'var(--ink)';
+      el.style.borderBottomColor = 'var(--ink)';
+    }
+  };
+
   window.closeFillModal = function() {
     document.getElementById('fillModal').classList.remove('show');
   };
 
   window.fillModalRevealAll = function() {
+    if (!state.modalFillItem) return;
+    var slots = document.querySelectorAll('#fillModalText .blank-slot');
+    var blanks = state.modalFillItem.blanks || [];
+    slots.forEach(function(s, idx) {
+      if (blanks[idx]) {
+        s.textContent = blanks[idx];
+        s.style.color = 'var(--ink)';
+        s.style.borderBottomColor = 'var(--ink)';
+      }
+    });
+  };
+
+  window.fillModalResetBlanks = function() {
     var slots = document.querySelectorAll('#fillModalText .blank-slot');
     slots.forEach(function(s) {
-      s.style.color = 'var(--ink)';
-      s.style.borderBottomColor = 'var(--ink)';
+      s.textContent = '______';
+      s.style.color = 'transparent';
+      s.style.borderBottomColor = 'var(--accent)';
     });
   };
 
