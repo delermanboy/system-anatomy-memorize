@@ -585,6 +585,52 @@ body {
   background: var(--accent2);
   color: #fff;
 }
+.syllabus-point-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.syllabus-point-main:hover { background: var(--bg2); }
+.syllabus-refs {
+  padding: 0.2rem 0.5rem 0.4rem 2.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+.syllabus-refs-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-right: 0.2rem;
+}
+.syllabus-ref-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  background: var(--bg2);
+}
+.syllabus-ref-tag:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+@keyframes highlightPulse {
+  0% { box-shadow: 0 0 0 0 rgba(196,30,58,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(196,30,58,0); }
+  100% { box-shadow: 0 0 0 0 rgba(196,30,58,0); }
+}
+.highlight {
+  animation: highlightPulse 2s ease-out;
+}
 .corr-modal-box textarea {
   width: 100%;
   min-height: 120px;
@@ -1692,6 +1738,47 @@ body {
   };
 
   // ===== SYLLABUS =====
+  function findRefItem(refId) {
+    if (!refId) return null;
+    var prefix = refId.split('_')[0];
+    var arr = prefix === 'kp' ? APP_DATA.keyPoints : (prefix === 'essay' ? APP_DATA.essayQuestions : APP_DATA.fillBlanks);
+    var item = arr.find(function(i) { return i.id === refId; });
+    if (!item) return null;
+    return { id: refId, type: prefix, item: item };
+  }
+  window.jumpToRef = function(refId, type, event) {
+    if (event) event.stopPropagation();
+    var item = findRefItem(refId);
+    if (!item) return;
+    if (type === 'kp') {
+      switchTab('sprint');
+      state.sprintCategory = 'all';
+      state.sprintMode = 'all';
+      renderSprintList(true);
+      setTimeout(function() {
+        var el = document.getElementById('sprint-' + refId);
+        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('highlight'); setTimeout(function() { el.classList.remove('highlight'); }, 2000); }
+      }, 100);
+    } else if (type === 'essay') {
+      switchTab('essay');
+      state.essayCategory = 'all';
+      state.essayType = 'all';
+      renderEssayList();
+      setTimeout(function() {
+        var el = document.getElementById('essay-' + refId);
+        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('highlight'); setTimeout(function() { el.classList.remove('highlight'); }, 2000); }
+      }, 100);
+    } else {
+      switchTab('fill');
+      state.fillCategory = 'all';
+      renderFillList();
+      setTimeout(function() {
+        var el = document.getElementById('fill-' + refId);
+        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('highlight'); setTimeout(function() { el.classList.remove('highlight'); }, 2000); }
+      }, 100);
+    }
+  };
+
   var syllabusChecked = {};
   function loadSyllabusChecked() {
     try {
@@ -1767,10 +1854,25 @@ body {
         var checked = syllabusChecked[pt.id];
         if (checked) checkedPoints++;
         var levelClass = pt.level === '掌握' ? 'master' : (pt.level === '熟悉' ? 'familiar' : 'understand');
-        html += '<div class="syllabus-point' + (checked ? ' checked' : '') + '" onclick="toggleSyllabusPoint(\'' + pt.id + '\')">';
+        html += '<div class="syllabus-point' + (checked ? ' checked' : '') + '">';
+        html += '<div class="syllabus-point-main" onclick="toggleSyllabusPoint(\'' + pt.id + '\')">';
         html += '<span class="syllabus-check">' + (checked ? '✓' : '') + '</span>';
         html += '<span class="syllabus-level ' + levelClass + '">' + pt.level + '</span>';
         html += '<span class="syllabus-point-text">' + pt.text + '</span>';
+        html += '</div>';
+        // 参考资料
+        if (pt.refs && pt.refs.length > 0) {
+          html += '<div class="syllabus-refs">';
+          html += '<span class="syllabus-refs-label">参考：</span>';
+          pt.refs.forEach(function(refId, idx) {
+            var refItem = findRefItem(refId);
+            if (refItem) {
+              var typeLabel = refItem.type === 'kp' ? '冲刺' : (refItem.type === 'essay' ? '大题' : '挖空');
+              html += '<span class="syllabus-ref-tag" onclick="jumpToRef(\'' + refId + '\', \'' + refItem.type + '\', event)">' + typeLabel + (idx + 1) + '</span>';
+            }
+          });
+          html += '</div>';
+        }
         html += '</div>';
       });
       html += '</div></div>';
