@@ -1601,10 +1601,10 @@ body {
     if (randomBtn) randomBtn.addEventListener('click', randomSprint);
     var modalClose = document.getElementById('sprintModalClose');
     if (modalClose) modalClose.addEventListener('click', closeSprintModal);
-    var modalMastered = document.getElementById('sprintModalMastered');
-    if (modalMastered) modalMastered.addEventListener('click', modalMarkMastered);
-    var modalPeek = document.getElementById('sprintModalPeek');
-    if (modalPeek) modalPeek.addEventListener('click', modalPeek);
+    var modalMasteredEl = document.getElementById('sprintModalMastered');
+    if (modalMasteredEl) modalMasteredEl.addEventListener('click', modalMarkMastered);
+    var modalPeekEl = document.getElementById('sprintModalPeek');
+    if (modalPeekEl) modalPeekEl.addEventListener('click', modalPeek);
     var modalAgain = document.getElementById('sprintModalAgain');
     if (modalAgain) modalAgain.addEventListener('click', randomSprint);
     var modalOverlay = document.getElementById('sprintModal');
@@ -1633,8 +1633,8 @@ body {
     // Essay modal events
     var essayModalClose = document.getElementById('essayModalClose');
     if (essayModalClose) essayModalClose.addEventListener('click', closeEssayModal);
-    var essayModalToggle = document.getElementById('essayModalToggle');
-    if (essayModalToggle) essayModalToggle.addEventListener('click', essayModalToggle);
+    var essayModalToggleEl = document.getElementById('essayModalToggle');
+    if (essayModalToggleEl) essayModalToggleEl.addEventListener('click', essayModalToggle);
     var essayModalAgain = document.getElementById('essayModalAgain');
     if (essayModalAgain) essayModalAgain.addEventListener('click', randomEssay);
     var essayOverlay = document.getElementById('essayModal');
