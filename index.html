@@ -474,6 +474,117 @@ body {
   margin-left: 0.2rem;
 }
 .corr-reset-btn:hover { opacity: 1; color: var(--accent); }
+
+/* ===== SYLLABUS ===== */
+.syllabus-header {
+  margin-bottom: 1rem;
+}
+.syllabus-filter {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+.syllabus-filter .filter-chip.active[data-level="掌握"] { background: var(--accent); color: #fff; }
+.syllabus-filter .filter-chip.active[data-level="熟悉"] { background: var(--accent3); color: #fff; }
+.syllabus-filter .filter-chip.active[data-level="了解"] { background: var(--muted); color: #fff; }
+.syllabus-progress {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+.syllabus-chapter {
+  margin-bottom: 1.5rem;
+}
+.syllabus-chapter-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--ink);
+  padding: 0.5rem 0.75rem;
+  background: var(--bg2);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.syllabus-chapter-title:hover { background: var(--bg3); }
+.syllabus-chapter-arrow {
+  transition: transform 0.2s;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.syllabus-chapter-arrow.open { transform: rotate(90deg); }
+.syllabus-section {
+  margin-bottom: 0.75rem;
+}
+.syllabus-section-title {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--accent2);
+  padding: 0.3rem 0.75rem;
+  border-left: 3px solid var(--accent2);
+  margin-bottom: 0.3rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.syllabus-section-title:hover { background: rgba(45,106,79,0.05); }
+.syllabus-points {
+  padding-left: 1.2rem;
+}
+.syllabus-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  transition: background 0.15s;
+  cursor: pointer;
+}
+.syllabus-point:hover { background: var(--bg2); }
+.syllabus-point.checked { background: rgba(45,106,79,0.08); }
+.syllabus-point.checked .syllabus-point-text { text-decoration: line-through; opacity: 0.6; }
+.syllabus-level {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+.syllabus-level.master { background: rgba(196,30,58,0.15); color: var(--accent); }
+.syllabus-level.familiar { background: rgba(184,134,11,0.15); color: var(--accent3); }
+.syllabus-level.understand { background: rgba(138,117,96,0.15); color: var(--muted); }
+.syllabus-point-text { flex: 1; }
+.syllabus-check {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--rule);
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: transparent;
+  transition: all 0.15s;
+}
+.syllabus-point.checked .syllabus-check {
+  border-color: var(--accent2);
+  background: var(--accent2);
+  color: #fff;
+}
 .corr-modal-box textarea {
   width: 100%;
   min-height: 120px;
@@ -1246,6 +1357,9 @@ body {
   <button class="tab-btn" data-tab="sprint" onclick="switchTab('sprint')">
     <span class="tab-icon">⚡</span>考前冲刺
   </button>
+  <button class="tab-btn" data-tab="syllabus" onclick="switchTab('syllabus')">
+    <span class="tab-icon">📖</span>回归大纲
+  </button>
 </nav>
 
 <!-- Main Content -->
@@ -1404,6 +1518,21 @@ body {
   </div>
 </div>
 
+<!-- ===== SYLLABUS PANEL ===== -->
+<div class="tab-panel" id="panel-syllabus">
+  <div class="syllabus-header">
+    <h2 style="font-size:1.1rem;color:var(--ink);margin:0 0 0.5rem">📖 120学时《系统解剖学》教学大纲</h2>
+    <div class="syllabus-filter">
+      <button class="filter-chip active" data-level="all" onclick="filterSyllabus('all')">全部</button>
+      <button class="filter-chip" data-level="掌握" onclick="filterSyllabus('掌握')" style="border-color:var(--accent);color:var(--accent)">掌握</button>
+      <button class="filter-chip" data-level="熟悉" onclick="filterSyllabus('熟悉')" style="border-color:var(--accent3);color:var(--accent3)">熟悉</button>
+      <button class="filter-chip" data-level="了解" onclick="filterSyllabus('了解')" style="border-color:var(--muted);color:var(--muted)">了解</button>
+    </div>
+    <div class="syllabus-progress" id="syllabusProgress"></div>
+  </div>
+  <div id="syllabusContent"></div>
+</div>
+
 <!-- Correction Modal -->
 <div class="sprint-modal-overlay" id="corrModal">
   <div class="sprint-modal-box corr-modal-box" style="max-width:560px">
@@ -1432,6 +1561,7 @@ body {
 <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
 <script src="assets/data.js"></script>
+<script src="assets/syllabus_data.js"></script>
 <script>
 (function() {
   'use strict';
@@ -1561,10 +1691,116 @@ body {
     modalMastered: false
   };
 
+  // ===== SYLLABUS =====
+  var syllabusChecked = {};
+  function loadSyllabusChecked() {
+    try {
+      var saved = localStorage.getItem('anatomy_syllabus_checked');
+      if (saved) syllabusChecked = JSON.parse(saved);
+    } catch(e) {}
+  }
+  function saveSyllabusChecked() {
+    try { localStorage.setItem('anatomy_syllabus_checked', JSON.stringify(syllabusChecked)); } catch(e) {}
+  }
+  var syllabusLevel = 'all';
+  window.filterSyllabus = function(level) {
+    syllabusLevel = level;
+    document.querySelectorAll('.syllabus-filter .filter-chip').forEach(function(btn) {
+      btn.classList.toggle('active', btn.dataset.level === level);
+    });
+    renderSyllabus();
+  };
+  window.toggleSyllabusPoint = function(id) {
+    if (syllabusChecked[id]) {
+      delete syllabusChecked[id];
+    } else {
+      syllabusChecked[id] = true;
+    }
+    saveSyllabusChecked();
+    renderSyllabus();
+  };
+  window.toggleSyllabusSection = function(sectionId) {
+    var el = document.getElementById('syllabus-section-' + sectionId);
+    var arrow = document.getElementById('syllabus-arrow-' + sectionId);
+    if (el) {
+      var isHidden = el.style.display === 'none';
+      el.style.display = isHidden ? 'block' : 'none';
+      if (arrow) arrow.classList.toggle('open', isHidden);
+    }
+  };
+  window.toggleSyllabusChapter = function(chapterId) {
+    var el = document.getElementById('syllabus-chapter-' + chapterId);
+    var arrow = document.getElementById('syllabus-chapter-arrow-' + chapterId);
+    if (el) {
+      var isHidden = el.style.display === 'none';
+      el.style.display = isHidden ? 'block' : 'none';
+      if (arrow) arrow.classList.toggle('open', isHidden);
+    }
+  };
+  function renderSyllabus() {
+    if (typeof SYLLABUS_DATA === 'undefined') return;
+    var container = document.getElementById('syllabusContent');
+    var totalPoints = 0, checkedPoints = 0;
+    var html = '';
+    var currentChapter = '';
+    SYLLABUS_DATA.forEach(function(section) {
+      // Chapter header
+      if (section.chapter !== currentChapter) {
+        currentChapter = section.chapter;
+        html += '<div class="syllabus-chapter">';
+        html += '<div class="syllabus-chapter-title" onclick="toggleSyllabusChapter(\'' + section.id + '\')">';
+        html += '<span>' + currentChapter + '</span>';
+        html += '<span class="syllabus-chapter-arrow open" id="syllabus-chapter-arrow-' + section.id + '">▶</span>';
+        html += '</div>';
+        html += '<div id="syllabus-chapter-' + section.id + '">';
+      }
+      // Section
+      html += '<div class="syllabus-section">';
+      html += '<div class="syllabus-section-title" onclick="toggleSyllabusSection(\'' + section.id + '\')">';
+      html += '<span>' + section.section + '</span>';
+      html += '<span class="syllabus-chapter-arrow open" id="syllabus-arrow-' + section.id + '">▶</span>';
+      html += '</div>';
+      html += '<div class="syllabus-points" id="syllabus-section-' + section.id + '">';
+      section.points.forEach(function(pt) {
+        totalPoints++;
+        if (syllabusLevel !== 'all' && pt.level !== syllabusLevel) return;
+        var checked = syllabusChecked[pt.id];
+        if (checked) checkedPoints++;
+        var levelClass = pt.level === '掌握' ? 'master' : (pt.level === '熟悉' ? 'familiar' : 'understand');
+        html += '<div class="syllabus-point' + (checked ? ' checked' : '') + '" onclick="toggleSyllabusPoint(\'' + pt.id + '\')">';
+        html += '<span class="syllabus-check">' + (checked ? '✓' : '') + '</span>';
+        html += '<span class="syllabus-level ' + levelClass + '">' + pt.level + '</span>';
+        html += '<span class="syllabus-point-text">' + pt.text + '</span>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+      // Close chapter if next section is different chapter
+      var nextSection = SYLLABUS_DATA[SYLLABUS_DATA.indexOf(section) + 1];
+      if (!nextSection || nextSection.chapter !== currentChapter) {
+        html += '</div>';
+      }
+    });
+    container.innerHTML = html;
+    // Update progress
+    var progressEl = document.getElementById('syllabusProgress');
+    if (progressEl) {
+      var total = 0, checked = 0;
+      SYLLABUS_DATA.forEach(function(s) {
+        s.points.forEach(function(pt) {
+          total++;
+          if (syllabusChecked[pt.id]) checked++;
+        });
+      });
+      progressEl.textContent = '已完成 ' + checked + ' / ' + total + ' 个知识点 (' + (total > 0 ? Math.round(checked/total*100) : 0) + '%)';
+    }
+  }
+
   // ===== INIT =====
   function init() {
     loadFavorites();
+    loadSyllabusChecked();
     buildFilters();
+    renderSyllabus();
     renderAll();
     updateStats();
     renderHome();
