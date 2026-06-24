@@ -682,6 +682,19 @@ body {
   font-weight: bold;
   border-bottom: 1px dashed var(--accent);
 }
+.syllabus-detail {
+  margin: 0.4rem 0.5rem 0.6rem 2.2rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(196,30,58,0.04);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.82rem;
+  line-height: 1.8;
+  color: var(--ink);
+}
+.syllabus-point.checked .syllabus-detail {
+  opacity: 0.6;
+}
 @keyframes highlightPulse {
   0% { box-shadow: 0 0 0 0 rgba(196,30,58,0.4); }
   50% { box-shadow: 0 0 0 8px rgba(196,30,58,0); }
@@ -1929,6 +1942,10 @@ body {
         html += '<span class="syllabus-level ' + levelClass + '">' + pt.level + '</span>';
         html += '<span class="syllabus-point-text">' + pt.text + '</span>';
         html += '</div>';
+        // 掌握知识点显示详细内容
+        if (pt.level === '掌握' && pt.detail) {
+          html += '<div class="syllabus-detail">' + pt.detail.replace(/\\n/g, '<br>') + '</div>';
+        }
         // 参考资料（直接展开显示）
         if (pt.refs && pt.refs.length > 0) {
           html += '<div class="syllabus-refs">';
