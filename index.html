@@ -438,6 +438,65 @@ body {
   color: #fff;
 }
 
+/* ===== CORRECTIONS ===== */
+.corr-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.3rem;
+  line-height: 1;
+  opacity: 0.35;
+  transition: all 0.2s;
+  margin-left: 0.2rem;
+}
+.corr-btn:hover { opacity: 0.8; transform: scale(1.15); }
+.corr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.6rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(196,30,58,0.15);
+  color: var(--accent);
+  font-weight: bold;
+  margin-left: 0.3rem;
+}
+.corr-reset-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: var(--muted);
+  opacity: 0.5;
+  transition: all 0.2s;
+  margin-left: 0.2rem;
+}
+.corr-reset-btn:hover { opacity: 1; color: var(--accent); }
+.corr-modal-box textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'ArsenalSC', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  outline: none;
+  resize: vertical;
+  margin-bottom: 0.5rem;
+}
+.corr-modal-box textarea:focus { border-color: var(--accent); }
+.corr-modal-box label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+
 /* ===== FILL BLANKS ===== */
 .blank-text {
   font-size: 0.95rem;
@@ -1342,6 +1401,30 @@ body {
   </div>
 </div>
 
+<!-- Correction Modal -->
+<div class="sprint-modal-overlay" id="corrModal">
+  <div class="sprint-modal-box corr-modal-box" style="max-width:560px">
+    <button class="sprint-modal-close" id="corrModalClose">✕</button>
+    <div class="sprint-modal-meta" id="corrModalMeta"></div>
+    <div style="margin-bottom:0.75rem">
+      <label>题目内容</label>
+      <textarea id="corrText" placeholder="修改题目内容..."></textarea>
+    </div>
+    <div style="margin-bottom:0.75rem" id="corrBlanksWrap">
+      <label>关键词（用逗号分隔）</label>
+      <textarea id="corrBlanks" placeholder="关键词1, 关键词2..."></textarea>
+    </div>
+    <div style="margin-bottom:0.75rem" id="corrAnswerWrap">
+      <label>答案内容</label>
+      <textarea id="corrAnswer" placeholder="修改答案内容..."></textarea>
+    </div>
+    <div class="sprint-modal-actions">
+      <button class="btn btn-primary" id="corrSave">保存修改</button>
+      <button class="btn" id="corrCancel">取消</button>
+    </div>
+  </div>
+</div>
+
 <!-- Scroll to top -->
 <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
@@ -1561,12 +1644,27 @@ body {
       });
     }
 
+    // Correction modal events
+    var corrModalClose = document.getElementById('corrModalClose');
+    if (corrModalClose) corrModalClose.addEventListener('click', closeCorrModal);
+    var corrSave = document.getElementById('corrSave');
+    if (corrSave) corrSave.addEventListener('click', saveCorrection);
+    var corrCancel = document.getElementById('corrCancel');
+    if (corrCancel) corrCancel.addEventListener('click', closeCorrModal);
+    var corrOverlay = document.getElementById('corrModal');
+    if (corrOverlay) {
+      corrOverlay.addEventListener('click', function(e) {
+        if (e.target === corrOverlay) closeCorrModal();
+      });
+    }
+
     // Escape closes all modals
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         closeSprintModal();
         closeFillModal();
         closeEssayModal();
+        closeCorrModal();
       }
     });
     window.addEventListener('scroll', function() {
@@ -1848,7 +1946,8 @@ body {
       return;
     }
     var html = '';
-    items.forEach(function(item) {
+    items.forEach(function(rawItem) {
+      var item = applyCorrection(rawItem);
       var revealed = state.fillRevealed[item.id] || new Set();
       var allRevealed = item.blanks.every(function(_, i) { return revealed.has(i); });
       var memCount = getCardMemCountAll(item.id);
@@ -1858,7 +1957,9 @@ body {
       html += '<div style="display:flex;align-items:center;gap:0.4rem">';
       html += '<span class="card-id">#' + item.id + '</span>';
       if (memCount > 0) html += '<span class="mem-badge">已背' + memCount + '次</span>';
+      html += corrBadgeHtml(item.id);
       html += favBtnHtml(item.id);
+      html += corrBtnHtml(item.id);
       html += '</div>';
       html += '</div>';
       html += '<div class="blank-text">';
@@ -2056,7 +2157,8 @@ body {
       return;
     }
     var html = '';
-    items.forEach(function(item) {
+    items.forEach(function(rawItem) {
+      var item = applyCorrection(rawItem);
       var revealed = state.essayRevealed[item.id] || false;
       var badgeClass = item.type === '简答题' ? 'badge-simple' : (item.type === '论述题' ? 'badge-essay' : 'badge-case');
       var memCount = getCardMemCountAll(item.id);
@@ -2069,7 +2171,9 @@ body {
       html += '<div style="display:flex;align-items:center;gap:0.4rem">';
       html += '<span class="card-id">#' + item.id + '</span>';
       if (memCount > 0) html += '<span class="mem-badge">已背' + memCount + '次</span>';
+      html += corrBadgeHtml(item.id);
       html += favBtnHtml(item.id);
+      html += corrBtnHtml(item.id);
       html += '</div>';
       html += '</div>';
       html += '<div class="question-text">' + item.question + '</div>';
@@ -2185,7 +2289,8 @@ body {
       return;
     }
     var html = '';
-    items.forEach(function(item) {
+    items.forEach(function(rawItem) {
+      var item = applyCorrection(rawItem);
       var mastered = state.sprintMastered[item.id];
       var memCount = getCardMemCountAll(item.id);
       html += '<div class="sprint-card level-' + item.importance + (mastered ? ' mastered' : '') + '" id="sprint-' + item.id + '">';
@@ -2198,7 +2303,9 @@ body {
       html += '</span>';
       html += '<span class="sprint-category">' + item.category + '</span>';
       if (memCount > 0) html += '<span class="mem-badge">已背' + memCount + '次</span>';
+      html += corrBadgeHtml(item.id);
       html += favBtnHtml(item.id);
+      html += corrBtnHtml(item.id);
       html += '</div>';
       if (!mastered) {
         html += '<div class="sprint-actions">';
@@ -2405,6 +2512,111 @@ body {
   function isFavFilter() {
     return state.fillCategory === '__fav__' || state.essayCategory === '__fav__' || state.sprintCategory === '__fav__';
   }
+
+  // ===== CORRECTIONS =====
+  function loadCorrections() {
+    try {
+      var saved = localStorage.getItem('anatomy_corrections');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return {};
+  }
+  function saveCorrections(data) {
+    try { localStorage.setItem('anatomy_corrections', JSON.stringify(data)); } catch(e) {}
+  }
+  function getCorrection(id) {
+    return loadCorrections()[id] || null;
+  }
+  function setCorrection(id, patch) {
+    var all = loadCorrections();
+    all[id] = patch;
+    saveCorrections(all);
+  }
+  function resetCorrection(id) {
+    var all = loadCorrections();
+    delete all[id];
+    saveCorrections(all);
+  }
+  function applyCorrection(item) {
+    var corr = getCorrection(item.id);
+    if (!corr) return item;
+    var copy = JSON.parse(JSON.stringify(item));
+    if (corr.text !== undefined) copy.text = corr.text;
+    if (corr.blanks !== undefined) copy.blanks = corr.blanks;
+    if (corr.question !== undefined) copy.question = corr.question;
+    if (corr.answer !== undefined) copy.answer = corr.answer;
+    if (corr.point !== undefined) copy.point = corr.point;
+    return copy;
+  }
+  function corrBadgeHtml(id) {
+    var corr = getCorrection(id);
+    if (!corr) return '';
+    return '<span class="corr-badge">已修改</span>' +
+      '<button class="corr-reset-btn" onclick="resetCardCorrection(\'' + id + '\', event)" title="恢复原始版本">↺</button>';
+  }
+  function corrBtnHtml(id) {
+    return '<button class="corr-btn" onclick="openCorrection(\'' + id + '\', event)" title="勘误">✏️</button>';
+  }
+  window.openCorrection = function(id, event) {
+    if (event) event.stopPropagation();
+    state.corrId = id;
+    // Find original item
+    var item = APP_DATA.fillBlanks.find(function(i) { return i.id === id; }) ||
+               APP_DATA.essayQuestions.find(function(i) { return i.id === id; }) ||
+               APP_DATA.keyPoints.find(function(i) { return i.id === id; });
+    if (!item) return;
+    state.corrOriginal = JSON.parse(JSON.stringify(item));
+    var corr = getCorrection(id);
+    var current = applyCorrection(item);
+    // Determine type
+    var isFill = APP_DATA.fillBlanks.some(function(i) { return i.id === id; });
+    var isEssay = APP_DATA.essayQuestions.some(function(i) { return i.id === id; });
+    var isKey = APP_DATA.keyPoints.some(function(i) { return i.id === id; });
+    state.corrType = isFill ? 'fill' : (isEssay ? 'essay' : 'key');
+    // Show/hide fields
+    document.getElementById('corrBlanksWrap').style.display = isFill ? 'block' : 'none';
+    document.getElementById('corrAnswerWrap').style.display = isEssay ? 'block' : 'none';
+    // Populate fields
+    document.getElementById('corrModalMeta').innerHTML = '<span>' + item.category + '</span>';
+    document.getElementById('corrText').value = current.text || current.question || current.point || '';
+    document.getElementById('corrBlanks').value = (current.blanks || []).join(', ');
+    document.getElementById('corrAnswer').value = current.answer || '';
+    document.getElementById('corrModal').classList.add('show');
+  };
+  window.closeCorrModal = function() {
+    document.getElementById('corrModal').classList.remove('show');
+  };
+  window.saveCorrection = function() {
+    var id = state.corrId;
+    if (!id) return;
+    var patch = {};
+    var text = document.getElementById('corrText').value.trim();
+    if (state.corrType === 'fill') {
+      patch.text = text;
+      var blanks = document.getElementById('corrBlanks').value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+      patch.blanks = blanks;
+    } else if (state.corrType === 'essay') {
+      patch.question = text;
+      patch.answer = document.getElementById('corrAnswer').value.trim();
+    } else {
+      patch.point = text;
+    }
+    setCorrection(id, patch);
+    showToast('已保存修改');
+    closeCorrModal();
+    // Re-render
+    renderFillList();
+    renderEssayList();
+    renderSprintList(true);
+  };
+  window.resetCardCorrection = function(id, event) {
+    if (event) event.stopPropagation();
+    resetCorrection(id);
+    showToast('已恢复原始版本');
+    renderFillList();
+    renderEssayList();
+    renderSprintList(true);
+  };
 
   function updateStats() {
     var fillDone = 0;
