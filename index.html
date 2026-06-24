@@ -594,94 +594,6 @@ body {
   transition: background 0.15s;
 }
 .syllabus-point-main:hover { background: var(--bg2); }
-.syllabus-refs {
-  padding: 0.2rem 0.5rem 0.4rem 2.2rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  align-items: center;
-}
-.syllabus-refs-label {
-  font-size: 0.7rem;
-  color: var(--muted);
-  margin-right: 0.2rem;
-}
-.syllabus-ref-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.1rem 0.4rem;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  cursor: pointer;
-  transition: all 0.15s;
-  border: 1px solid var(--rule);
-  color: var(--ink);
-  background: var(--bg2);
-}
-.syllabus-ref-tag:hover {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-.syllabus-ref-card {
-  background: var(--bg);
-  border: 1px solid var(--rule);
-  border-radius: 8px;
-  margin-bottom: 0.3rem;
-  overflow: hidden;
-}
-.syllabus-ref-header {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.5rem;
-  cursor: pointer;
-  transition: background 0.15s;
-  font-size: 0.8rem;
-}
-.syllabus-ref-header:hover { background: var(--bg2); }
-.syllabus-ref-type {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.05rem 0.3rem;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: bold;
-  flex-shrink: 0;
-  background: rgba(196,30,58,0.12);
-  color: var(--accent);
-}
-.syllabus-ref-preview {
-  flex: 1;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.syllabus-ref-arrow {
-  font-size: 0.7rem;
-  color: var(--muted);
-  flex-shrink: 0;
-}
-.syllabus-ref-body {
-  padding: 0.5rem 0.6rem;
-  border-top: 1px solid var(--rule);
-  font-size: 0.82rem;
-  line-height: 1.7;
-  color: var(--ink);
-}
-.ref-content-text { margin-bottom: 0.3rem; }
-.ref-content-answer {
-  background: rgba(45,106,79,0.06);
-  padding: 0.4rem 0.5rem;
-  border-radius: 6px;
-  margin-top: 0.3rem;
-}
-.ref-blank {
-  color: var(--accent);
-  font-weight: bold;
-  border-bottom: 1px dashed var(--accent);
-}
 .syllabus-detail {
   margin: 0.4rem 0.5rem 0.6rem 2.2rem;
   padding: 0.6rem 0.75rem;
@@ -1641,8 +1553,8 @@ body {
   <div class="syllabus-header">
     <h2 style="font-size:1.1rem;color:var(--ink);margin:0 0 0.5rem">📖 120学时《系统解剖学》教学大纲</h2>
     <div class="syllabus-filter">
-      <button class="filter-chip active" data-level="all" onclick="filterSyllabus('all')">全部</button>
-      <button class="filter-chip" data-level="掌握" onclick="filterSyllabus('掌握')" style="border-color:var(--accent);color:var(--accent)">掌握</button>
+      <button class="filter-chip" data-level="all" onclick="filterSyllabus('all')">全部</button>
+      <button class="filter-chip active" data-level="掌握" onclick="filterSyllabus('掌握')" style="border-color:var(--accent);color:var(--accent)">掌握</button>
       <button class="filter-chip" data-level="熟悉" onclick="filterSyllabus('熟悉')" style="border-color:var(--accent3);color:var(--accent3)">熟悉</button>
       <button class="filter-chip" data-level="了解" onclick="filterSyllabus('了解')" style="border-color:var(--muted);color:var(--muted)">了解</button>
     </div>
@@ -1810,47 +1722,6 @@ body {
   };
 
   // ===== SYLLABUS =====
-  function findRefItem(refId) {
-    if (!refId) return null;
-    var prefix = refId.split('_')[0];
-    var arr = prefix === 'kp' ? APP_DATA.keyPoints : (prefix === 'essay' ? APP_DATA.essayQuestions : APP_DATA.fillBlanks);
-    var item = arr.find(function(i) { return i.id === refId; });
-    if (!item) return null;
-    return { id: refId, type: prefix, item: item };
-  }
-  window.jumpToRef = function(refId, type, event) {
-    if (event) event.stopPropagation();
-    var item = findRefItem(refId);
-    if (!item) return;
-    if (type === 'kp') {
-      switchTab('sprint');
-      state.sprintCategory = 'all';
-      state.sprintMode = 'all';
-      renderSprintList(true);
-      setTimeout(function() {
-        var el = document.getElementById('sprint-' + refId);
-        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('highlight'); setTimeout(function() { el.classList.remove('highlight'); }, 2000); }
-      }, 100);
-    } else if (type === 'essay') {
-      switchTab('essay');
-      state.essayCategory = 'all';
-      state.essayType = 'all';
-      renderEssayList();
-      setTimeout(function() {
-        var el = document.getElementById('essay-' + refId);
-        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('highlight'); setTimeout(function() { el.classList.remove('highlight'); }, 2000); }
-      }, 100);
-    } else {
-      switchTab('fill');
-      state.fillCategory = 'all';
-      renderFillList();
-      setTimeout(function() {
-        var el = document.getElementById('fill-' + refId);
-        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('highlight'); setTimeout(function() { el.classList.remove('highlight'); }, 2000); }
-      }, 100);
-    }
-  };
-
   var syllabusChecked = {};
   function loadSyllabusChecked() {
     try {
@@ -1861,7 +1732,7 @@ body {
   function saveSyllabusChecked() {
     try { localStorage.setItem('anatomy_syllabus_checked', JSON.stringify(syllabusChecked)); } catch(e) {}
   }
-  var syllabusLevel = 'all';
+  var syllabusLevel = '掌握';
   window.filterSyllabus = function(level) {
     syllabusLevel = level;
     document.querySelectorAll('.syllabus-filter .filter-chip').forEach(function(btn) {
@@ -1877,16 +1748,6 @@ body {
     }
     saveSyllabusChecked();
     renderSyllabus();
-  };
-  window.toggleRefCard = function(refKey, event) {
-    if (event) event.stopPropagation();
-    var body = document.getElementById('ref-body-' + refKey);
-    var arrow = document.getElementById('ref-arrow-' + refKey);
-    if (body) {
-      var isHidden = body.style.display === 'none';
-      body.style.display = isHidden ? 'block' : 'none';
-      if (arrow) arrow.textContent = isHidden ? '▲' : '▼';
-    }
   };
   window.toggleSyllabusSection = function(sectionId) {
     var el = document.getElementById('syllabus-section-' + sectionId);
@@ -1909,10 +1770,14 @@ body {
   function renderSyllabus() {
     if (typeof SYLLABUS_DATA === 'undefined') return;
     var container = document.getElementById('syllabusContent');
-    var totalPoints = 0, checkedPoints = 0;
     var html = '';
     var currentChapter = '';
     SYLLABUS_DATA.forEach(function(section) {
+      // Check if any point matches current filter
+      var hasMatch = section.points.some(function(pt) {
+        return syllabusLevel === 'all' || pt.level === syllabusLevel;
+      });
+      if (!hasMatch) return;
       // Chapter header
       if (section.chapter !== currentChapter) {
         currentChapter = section.chapter;
@@ -1931,10 +1796,8 @@ body {
       html += '</div>';
       html += '<div class="syllabus-points" id="syllabus-section-' + section.id + '">';
       section.points.forEach(function(pt) {
-        totalPoints++;
         if (syllabusLevel !== 'all' && pt.level !== syllabusLevel) return;
         var checked = syllabusChecked[pt.id];
-        if (checked) checkedPoints++;
         var levelClass = pt.level === '掌握' ? 'master' : (pt.level === '熟悉' ? 'familiar' : 'understand');
         html += '<div class="syllabus-point' + (checked ? ' checked' : '') + '">';
         html += '<div class="syllabus-point-main" onclick="toggleSyllabusPoint(\'' + pt.id + '\')">';
@@ -1945,38 +1808,6 @@ body {
         // 掌握知识点显示详细内容
         if (pt.level === '掌握' && pt.detail) {
           html += '<div class="syllabus-detail">' + pt.detail.replace(/\\n/g, '<br>') + '</div>';
-        }
-        // 参考资料（直接展开显示）
-        if (pt.refs && pt.refs.length > 0) {
-          html += '<div class="syllabus-refs">';
-          pt.refs.forEach(function(refId, idx) {
-            var refItem = findRefItem(refId);
-            if (!refItem) return;
-            var typeLabel = refItem.type === 'kp' ? '冲刺' : (refItem.type === 'essay' ? '大题' : '挖空');
-            var content = '';
-            if (refItem.type === 'kp') {
-              content = '<div class="ref-content-text">' + (refItem.item.point || '') + '</div>';
-            } else if (refItem.type === 'essay') {
-              content = '<div class="ref-content-text"><strong>问：</strong>' + (refItem.item.question || '') + '</div>' +
-                '<div class="ref-content-answer"><strong>答：</strong>' + formatAnswer(refItem.item.answer || '') + '</div>';
-            } else {
-              var t = refItem.item.text || '';
-              var b = refItem.item.blanks || [];
-              b.forEach(function(blank) {
-                t = t.replace(new RegExp('(' + blank.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'g'), '<span class="ref-blank">$1</span>');
-              });
-              content = '<div class="ref-content-text">' + t + '</div>';
-            }
-            html += '<div class="syllabus-ref-card">';
-            html += '<div class="syllabus-ref-header" onclick="toggleRefCard(\'' + pt.id + '_' + idx + '\', event)">';
-            html += '<span class="syllabus-ref-type">' + typeLabel + '</span>';
-            html += '<span class="syllabus-ref-preview">' + (refItem.type === 'kp' ? (refItem.item.point || '').substring(0, 30) + '...' : (refItem.type === 'essay' ? (refItem.item.question || '').substring(0, 30) + '...' : (refItem.item.text || '').substring(0, 30) + '...')) + '</span>';
-            html += '<span class="syllabus-ref-arrow" id="ref-arrow-' + pt.id + '_' + idx + '">▼</span>';
-            html += '</div>';
-            html += '<div class="syllabus-ref-body" id="ref-body-' + pt.id + '_' + idx + '">' + content + '</div>';
-            html += '</div>';
-          });
-          html += '</div>';
         }
         html += '</div>';
       });
